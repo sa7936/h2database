@@ -22,8 +22,8 @@ import org.h2.message.DbException;
 import org.h2.util.StringUtils;
 
 /**
- * This class contains meta data information about data types,
- * and can convert between Java objects and Values.
+ * This class contains meta data information about data types, and can convert
+ * between Java objects and Values.
  */
 public class DataType {
 
@@ -125,6 +125,7 @@ public class DataType {
                 "VARCHAR_CASESENSITIVE", "TID",
                 "LONGVARCHAR", "LONGNVARCHAR",
                 "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT", "NTEXT");
+        add(Value.PASSWORD, Types.VARCHAR, createString(true, false), "PASSWORD");
         add(Value.CLOB, Types.CLOB, createLob(true),
                 "CHARACTER LARGE OBJECT", "CLOB", "CHAR LARGE OBJECT",
                 "NCLOB", "NCHAR LARGE OBJECT", "NATIONAL CHARACTER LARGE OBJECT");
@@ -343,14 +344,14 @@ public class DataType {
     public static int convertTypeToSQLType(TypeInfo type) {
         int valueType = type.getValueType();
         switch (valueType) {
-        case Value.NUMERIC:
-            return type.getExtTypeInfo() != null ? Types.DECIMAL : Types.NUMERIC;
-        case Value.REAL:
-        case Value.DOUBLE:
-            if (type.getDeclaredPrecision() >= 0) {
-                return Types.FLOAT;
-            }
-            break;
+            case Value.NUMERIC:
+                return type.getExtTypeInfo() != null ? Types.DECIMAL : Types.NUMERIC;
+            case Value.REAL:
+            case Value.DOUBLE:
+                if (type.getDeclaredPrecision() >= 0) {
+                    return Types.FLOAT;
+                }
+                break;
         }
         return getDataType(valueType).sqlType;
     }
@@ -399,27 +400,24 @@ public class DataType {
     /**
      * Check whether the specified column needs the binary representation.
      *
-     * @param meta
-     *            metadata
-     * @param column
-     *            column index
+     * @param meta metadata
+     * @param column column index
      * @return {@code true} if column needs the binary representation,
-     *         {@code false} otherwise
-     * @throws SQLException
-     *             on SQL exception
+     * {@code false} otherwise
+     * @throws SQLException on SQL exception
      */
     public static boolean isBinaryColumn(ResultSetMetaData meta, int column) throws SQLException {
         switch (meta.getColumnType(column)) {
-        case Types.BINARY:
-            if (meta.getColumnTypeName(column).equals("UUID")) {
-                break;
-            }
+            case Types.BINARY:
+                if (meta.getColumnTypeName(column).equals("UUID")) {
+                    break;
+                }
             //$FALL-THROUGH$
-        case Types.LONGVARBINARY:
-        case Types.VARBINARY:
-        case Types.JAVA_OBJECT:
-        case Types.BLOB:
-            return true;
+            case Types.LONGVARBINARY:
+            case Types.VARBINARY:
+            case Types.JAVA_OBJECT:
+            case Types.BLOB:
+                return true;
         }
         return false;
     }
@@ -449,64 +447,64 @@ public class DataType {
      */
     public static int convertSQLTypeToValueType(int sqlType) {
         switch (sqlType) {
-        case Types.CHAR:
-        case Types.NCHAR:
-            return Value.CHAR;
-        case Types.VARCHAR:
-        case Types.LONGVARCHAR:
-        case Types.NVARCHAR:
-        case Types.LONGNVARCHAR:
-            return Value.VARCHAR;
-        case Types.NUMERIC:
-        case Types.DECIMAL:
-            return Value.NUMERIC;
-        case Types.BIT:
-        case Types.BOOLEAN:
-            return Value.BOOLEAN;
-        case Types.INTEGER:
-            return Value.INTEGER;
-        case Types.SMALLINT:
-            return Value.SMALLINT;
-        case Types.TINYINT:
-            return Value.TINYINT;
-        case Types.BIGINT:
-            return Value.BIGINT;
-        case Types.REAL:
-            return Value.REAL;
-        case Types.DOUBLE:
-        case Types.FLOAT:
-            return Value.DOUBLE;
-        case Types.BINARY:
-            return Value.BINARY;
-        case Types.VARBINARY:
-        case Types.LONGVARBINARY:
-            return Value.VARBINARY;
-        case Types.OTHER:
-            return Value.UNKNOWN;
-        case Types.JAVA_OBJECT:
-            return Value.JAVA_OBJECT;
-        case Types.DATE:
-            return Value.DATE;
-        case Types.TIME:
-            return Value.TIME;
-        case Types.TIMESTAMP:
-            return Value.TIMESTAMP;
-        case Types.TIME_WITH_TIMEZONE:
-            return Value.TIME_TZ;
-        case Types.TIMESTAMP_WITH_TIMEZONE:
-            return Value.TIMESTAMP_TZ;
-        case Types.BLOB:
-            return Value.BLOB;
-        case Types.CLOB:
-        case Types.NCLOB:
-            return Value.CLOB;
-        case Types.NULL:
-            return Value.NULL;
-        case Types.ARRAY:
-            return Value.ARRAY;
-        default:
-            throw DbException.get(
-                    ErrorCode.UNKNOWN_DATA_TYPE_1, Integer.toString(sqlType));
+            case Types.CHAR:
+            case Types.NCHAR:
+                return Value.CHAR;
+            case Types.VARCHAR:
+            case Types.LONGVARCHAR:
+            case Types.NVARCHAR:
+            case Types.LONGNVARCHAR:
+                return Value.VARCHAR;
+            case Types.NUMERIC:
+            case Types.DECIMAL:
+                return Value.NUMERIC;
+            case Types.BIT:
+            case Types.BOOLEAN:
+                return Value.BOOLEAN;
+            case Types.INTEGER:
+                return Value.INTEGER;
+            case Types.SMALLINT:
+                return Value.SMALLINT;
+            case Types.TINYINT:
+                return Value.TINYINT;
+            case Types.BIGINT:
+                return Value.BIGINT;
+            case Types.REAL:
+                return Value.REAL;
+            case Types.DOUBLE:
+            case Types.FLOAT:
+                return Value.DOUBLE;
+            case Types.BINARY:
+                return Value.BINARY;
+            case Types.VARBINARY:
+            case Types.LONGVARBINARY:
+                return Value.VARBINARY;
+            case Types.OTHER:
+                return Value.UNKNOWN;
+            case Types.JAVA_OBJECT:
+                return Value.JAVA_OBJECT;
+            case Types.DATE:
+                return Value.DATE;
+            case Types.TIME:
+                return Value.TIME;
+            case Types.TIMESTAMP:
+                return Value.TIMESTAMP;
+            case Types.TIME_WITH_TIMEZONE:
+                return Value.TIME_TZ;
+            case Types.TIMESTAMP_WITH_TIMEZONE:
+                return Value.TIMESTAMP_TZ;
+            case Types.BLOB:
+                return Value.BLOB;
+            case Types.CLOB:
+            case Types.NCLOB:
+                return Value.CLOB;
+            case Types.NULL:
+                return Value.NULL;
+            case Types.ARRAY:
+                return Value.ARRAY;
+            default:
+                throw DbException.get(
+                        ErrorCode.UNKNOWN_DATA_TYPE_1, Integer.toString(sqlType));
         }
     }
 
@@ -557,25 +555,25 @@ public class DataType {
      * @return whether an index is allowed
      */
     public static boolean isIndexable(TypeInfo type) {
-        switch(type.getValueType()) {
-        case Value.UNKNOWN:
-        case Value.NULL:
-        case Value.BLOB:
-        case Value.CLOB:
-            return false;
-        case Value.ARRAY:
-            return isIndexable((TypeInfo) type.getExtTypeInfo());
-        case Value.ROW: {
-            ExtTypeInfoRow ext = (ExtTypeInfoRow) type.getExtTypeInfo();
-            for (Map.Entry<String, TypeInfo> entry : ext.getFields()) {
-                if (!isIndexable(entry.getValue())) {
-                    return false;
+        switch (type.getValueType()) {
+            case Value.UNKNOWN:
+            case Value.NULL:
+            case Value.BLOB:
+            case Value.CLOB:
+                return false;
+            case Value.ARRAY:
+                return isIndexable((TypeInfo) type.getExtTypeInfo());
+            case Value.ROW: {
+                ExtTypeInfoRow ext = (ExtTypeInfoRow) type.getExtTypeInfo();
+                for (Map.Entry<String, TypeInfo> entry : ext.getFields()) {
+                    if (!isIndexable(entry.getValue())) {
+                        return false;
+                    }
                 }
             }
-        }
-        //$FALL-THROUGH$
-        default:
-            return true;
+            //$FALL-THROUGH$
+            default:
+                return true;
         }
     }
 
@@ -583,47 +581,45 @@ public class DataType {
      * Returns whether values of the specified data types have
      * session-independent compare results.
      *
-     * @param type1
-     *            the first data type
-     * @param type2
-     *            the second data type
+     * @param type1 the first data type
+     * @param type2 the second data type
      * @return are values have session-independent compare results
      */
     public static boolean areStableComparable(TypeInfo type1, TypeInfo type2) {
         int t1 = type1.getValueType();
         int t2 = type2.getValueType();
         switch (t1) {
-        case Value.UNKNOWN:
-        case Value.NULL:
-        case Value.BLOB:
-        case Value.CLOB:
-        case Value.ROW:
-            return false;
-        case Value.DATE:
-        case Value.TIMESTAMP:
-            // DATE is equal to TIMESTAMP at midnight
-            return t2 == Value.DATE || t2 == Value.TIMESTAMP;
-        case Value.TIME:
-        case Value.TIME_TZ:
-        case Value.TIMESTAMP_TZ:
-            // Conversions depend on current timestamp and time zone
-            return t1 == t2;
-        case Value.ARRAY:
-            if (t2 == Value.ARRAY) {
-                return areStableComparable((TypeInfo) type1.getExtTypeInfo(), (TypeInfo) type2.getExtTypeInfo());
-            }
-            return false;
-        default:
-            switch (t2) {
             case Value.UNKNOWN:
             case Value.NULL:
             case Value.BLOB:
             case Value.CLOB:
             case Value.ROW:
                 return false;
+            case Value.DATE:
+            case Value.TIMESTAMP:
+                // DATE is equal to TIMESTAMP at midnight
+                return t2 == Value.DATE || t2 == Value.TIMESTAMP;
+            case Value.TIME:
+            case Value.TIME_TZ:
+            case Value.TIMESTAMP_TZ:
+                // Conversions depend on current timestamp and time zone
+                return t1 == t2;
+            case Value.ARRAY:
+                if (t2 == Value.ARRAY) {
+                    return areStableComparable((TypeInfo) type1.getExtTypeInfo(), (TypeInfo) type2.getExtTypeInfo());
+                }
+                return false;
             default:
-                return true;
-            }
+                switch (t2) {
+                    case Value.UNKNOWN:
+                    case Value.NULL:
+                    case Value.BLOB:
+                    case Value.CLOB:
+                    case Value.ROW:
+                        return false;
+                    default:
+                        return true;
+                }
         }
     }
 
@@ -712,23 +708,22 @@ public class DataType {
      * Check if the given value type is a binary string type or a compatible
      * special data type such as Java object, UUID, geometry object, or JSON.
      *
-     * @param type
-     *            the value type
+     * @param type the value type
      * @return true if the value type is a binary string type or a compatible
-     *         special data type
+     * special data type
      */
     public static boolean isBinaryStringOrSpecialBinaryType(int type) {
         switch (type) {
-        case Value.VARBINARY:
-        case Value.BINARY:
-        case Value.BLOB:
-        case Value.JAVA_OBJECT:
-        case Value.UUID:
-        case Value.GEOMETRY:
-        case Value.JSON:
-            return true;
-        default:
-            return false;
+            case Value.VARBINARY:
+            case Value.BINARY:
+            case Value.BLOB:
+            case Value.JAVA_OBJECT:
+            case Value.UUID:
+            case Value.GEOMETRY:
+            case Value.JSON:
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -740,53 +735,51 @@ public class DataType {
      */
     public static boolean hasTotalOrdering(int type) {
         switch (type) {
-        case Value.BOOLEAN:
-        case Value.TINYINT:
-        case Value.SMALLINT:
-        case Value.INTEGER:
-        case Value.BIGINT:
-        // Negative zeroes and NaNs are normalized
-        case Value.DOUBLE:
-        case Value.REAL:
-        case Value.TIME:
-        case Value.DATE:
-        case Value.TIMESTAMP:
-        case Value.VARBINARY:
-        // Serialized data is compared
-        case Value.JAVA_OBJECT:
-        case Value.UUID:
-        // EWKB is used
-        case Value.GEOMETRY:
-        case Value.ENUM:
-        case Value.INTERVAL_YEAR:
-        case Value.INTERVAL_MONTH:
-        case Value.INTERVAL_DAY:
-        case Value.INTERVAL_HOUR:
-        case Value.INTERVAL_MINUTE:
-        case Value.INTERVAL_SECOND:
-        case Value.INTERVAL_YEAR_TO_MONTH:
-        case Value.INTERVAL_DAY_TO_HOUR:
-        case Value.INTERVAL_DAY_TO_MINUTE:
-        case Value.INTERVAL_DAY_TO_SECOND:
-        case Value.INTERVAL_HOUR_TO_MINUTE:
-        case Value.INTERVAL_HOUR_TO_SECOND:
-        case Value.INTERVAL_MINUTE_TO_SECOND:
-        case Value.BINARY:
-            return true;
-        default:
-            return false;
+            case Value.BOOLEAN:
+            case Value.TINYINT:
+            case Value.SMALLINT:
+            case Value.INTEGER:
+            case Value.BIGINT:
+            // Negative zeroes and NaNs are normalized
+            case Value.DOUBLE:
+            case Value.REAL:
+            case Value.TIME:
+            case Value.DATE:
+            case Value.TIMESTAMP:
+            case Value.VARBINARY:
+            // Serialized data is compared
+            case Value.JAVA_OBJECT:
+            case Value.UUID:
+            // EWKB is used
+            case Value.GEOMETRY:
+            case Value.ENUM:
+            case Value.INTERVAL_YEAR:
+            case Value.INTERVAL_MONTH:
+            case Value.INTERVAL_DAY:
+            case Value.INTERVAL_HOUR:
+            case Value.INTERVAL_MINUTE:
+            case Value.INTERVAL_SECOND:
+            case Value.INTERVAL_YEAR_TO_MONTH:
+            case Value.INTERVAL_DAY_TO_HOUR:
+            case Value.INTERVAL_DAY_TO_MINUTE:
+            case Value.INTERVAL_DAY_TO_SECOND:
+            case Value.INTERVAL_HOUR_TO_MINUTE:
+            case Value.INTERVAL_HOUR_TO_SECOND:
+            case Value.INTERVAL_MINUTE_TO_SECOND:
+            case Value.BINARY:
+                return true;
+            default:
+                return false;
         }
     }
 
     /**
      * Performs saturated addition of precision values.
      *
-     * @param p1
-     *            the first summand
-     * @param p2
-     *            the second summand
+     * @param p1 the first summand
+     * @param p2 the second summand
      * @return the sum of summands, or {@link Long#MAX_VALUE} if either argument
-     *         is negative or sum is out of range
+     * is negative or sum is out of range
      */
     public static long addPrecision(long p1, long p2) {
         long sum = p1 + p2;
