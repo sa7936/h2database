@@ -3158,6 +3158,7 @@ public final class InformationSchemaTable extends MetaTable {
                 case Value.VARCHAR_IGNORECASE:
                 case Value.PASSWORD:
                     hasCharsetAndCollation = true;
+                    declaredDataType = dataType;
                 //$FALL-THROUGH$
                 case Value.BINARY:
                 case Value.VARBINARY:

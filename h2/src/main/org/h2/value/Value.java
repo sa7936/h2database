@@ -355,6 +355,8 @@ public abstract class Value extends VersionedValue<Value> implements HasSQL, Typ
         GROUP_OTHER, GROUP_OTHER, GROUP_OTHER, GROUP_OTHER, GROUP_OTHER,
         // ARRAY, ROW
         GROUP_COLLECTION, GROUP_COLLECTION, //
+        // PASSWORD
+        GROUP_CHARACTER_STRING, //
     };
 
     private static final String NAMES[] = {
