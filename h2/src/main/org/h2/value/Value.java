@@ -1134,7 +1134,7 @@ public abstract class Value extends VersionedValue<Value> implements HasSQL, Typ
             case VARCHAR:
                 return convertToVarchar(targetType, provider, conversionMode, column);
             case PASSWORD:
-                return ValuePassword.get(getString()); //just string wrapped in password obj
+                return valueType == PASSWORD ? this : ValuePassword.get(getString());
             case CLOB:
                 return convertToClob(targetType, conversionMode, column);
             case VARCHAR_IGNORECASE:

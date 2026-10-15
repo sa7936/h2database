@@ -75,6 +75,8 @@ public final class BuiltinFunctions {
                 "CONCAT", "CONCAT_WS",
                 // HashFunction
                 "HASH", "ORA_HASH",
+                // PasswordVerifyFunction
+                "PASSWORD_VERIFY",
                 // RandFunction
                 "RAND", "RANDOM", "SECURE_RAND", "RANDOM_UUID", "UUID",
                 // SessionControlFunction

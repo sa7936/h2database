@@ -9,16 +9,24 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Random;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+
+import org.h2.message.DbException;
 import org.h2.security.BlockCipher;
 import org.h2.security.CipherFactory;
 import org.h2.security.SHA256;
 import org.h2.security.SHA3;
 import org.h2.test.TestBase;
 import org.h2.util.StringUtils;
+import org.h2.value.ValuePassword;
 
 /**
  * Tests various security primitives.
@@ -37,10 +45,133 @@ public class TestSecurity extends TestBase {
     @Override
     public void test() throws SQLException {
         testConnectWithHash();
+        testPassword();
         testSHA();
         testSHA3();
         testAES();
         testBlockCiphers();
+    }
+
+    private void testPassword() throws SQLException {
+        String plaintext = "päss\uD83D\uDD11'\\word";
+        ValuePassword first = ValuePassword.get(plaintext);
+        ValuePassword second = ValuePassword.get(plaintext);
+        assertTrue(first.verify(plaintext));
+        assertFalse(first.verify("Päss\uD83D\uDD11'\\word"));
+        assertFalse(first.verify("wrong"));
+        assertFalse(first.getString().contains(plaintext));
+        assertFalse(first.equals(second));
+        assertFalse(first.getString().equals(second.getString()));
+        ValuePassword restored = ValuePassword.fromEncoded(first.getString());
+        assertEquals(first, restored);
+        assertEquals(first.hashCode(), restored.hashCode());
+        assertTrue(restored.verify(plaintext));
+        assertTrue(ValuePassword.get("").verify(""));
+        assertTrue(ValuePassword.get(first.getString()).verify(first.getString()));
+        assertThrows(DbException.class, () -> ValuePassword.fromEncoded("bad"));
+        assertThrows(DbException.class, () -> ValuePassword.fromEncoded(
+                first.getString().replace("600000", "1")));
+        assertThrows(DbException.class, () -> ValuePassword.fromEncoded(
+                first.getString().substring(0, first.getString().length() - 1)));
+        assertThrows(DbException.class, () -> ValuePassword.get(null));
+        assertThrows(DbException.class, () -> ValuePassword.get("\uD800"));
+        assertThrows(DbException.class, () -> first.verify("\uDC00"));
+
+        // Check the production record against Java's independent PBKDF2 implementation.
+        ValuePassword ascii = ValuePassword.get("known password");
+        String[] fields = ascii.getString().split("\\$");
+        assertEquals("h2p", fields[1]);
+        assertEquals("1", fields[2]);
+        assertEquals("pbkdf2-sha256", fields[3]);
+        assertEquals("600000", fields[4]);
+        PBEKeySpec spec = new PBEKeySpec("known password".toCharArray(),
+                StringUtils.convertHexToBytes(fields[5]), 600_000, 256);
+        try {
+            assertEquals(fields[6], StringUtils.convertBytesToHex(
+                    SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).getEncoded()));
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        } finally {
+            spec.clearPassword();
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:h2:mem:password");
+                Statement stat = conn.createStatement()) {
+            stat.execute("CREATE TABLE P (ID INT PRIMARY KEY, C PASSWORD)");
+            try (PreparedStatement prep = conn.prepareStatement("INSERT INTO P VALUES (?, ?)")) {
+                prep.setInt(1, 1);
+                prep.setString(2, plaintext);
+                prep.executeUpdate();
+                prep.setInt(1, 2);
+                prep.setString(2, plaintext);
+                prep.executeUpdate();
+            }
+            try (ResultSet rs = stat.executeQuery("SELECT C FROM P ORDER BY ID")) {
+                rs.next();
+                String firstStored = rs.getString(1);
+                assertFalse(firstStored.contains(plaintext));
+                rs.next();
+                assertFalse(firstStored.equals(rs.getString(1)));
+            }
+            try (PreparedStatement prep = conn.prepareStatement(
+                    "SELECT PASSWORD_VERIFY(C, ?) FROM P ORDER BY ID")) {
+                prep.setString(1, plaintext);
+                try (ResultSet rs = prep.executeQuery()) {
+                    assertTrue(rs.next());
+                    assertTrue(rs.getBoolean(1));
+                    assertTrue(rs.next());
+                    assertTrue(rs.getBoolean(1));
+                }
+            }
+            stat.executeUpdate("UPDATE P SET C = (SELECT C FROM P WHERE ID = 1) WHERE ID = 2");
+            try (ResultSet rs = stat.executeQuery("SELECT C FROM P ORDER BY ID")) {
+                rs.next();
+                String firstStored = rs.getString(1);
+                rs.next();
+                assertEquals(firstStored, rs.getString(1));
+            }
+            stat.executeUpdate("INSERT INTO P SELECT 3, C FROM P WHERE ID = 1");
+            try (PreparedStatement prep = conn.prepareStatement("SELECT C = (SELECT C FROM P WHERE ID = 1), "
+                    + "PASSWORD_VERIFY(C, ?) FROM P WHERE ID = 3")) {
+                prep.setString(1, plaintext);
+                try (ResultSet rs = prep.executeQuery()) {
+                    rs.next();
+                    assertTrue(rs.getBoolean(1));
+                    assertTrue(rs.getBoolean(2));
+                }
+            }
+            stat.executeUpdate("INSERT INTO P VALUES (4, 'repeat'), (5, 'repeat')");
+            try (ResultSet rs = stat.executeQuery("SELECT COUNT(DISTINCT C) FROM P WHERE ID IN (4, 5)")) {
+                rs.next();
+                assertEquals(2, rs.getInt(1));
+            }
+            stat.executeUpdate("INSERT INTO P SELECT X + 5, CAST('cast-repeat' AS PASSWORD) "
+                    + "FROM SYSTEM_RANGE(1, 3)");
+            try (ResultSet rs = stat.executeQuery("SELECT COUNT(DISTINCT C) FROM P WHERE ID BETWEEN 6 AND 8")) {
+                rs.next();
+                assertEquals(3, rs.getInt(1));
+            }
+            try (ResultSet rs = stat.executeQuery("SELECT PASSWORD_VERIFY(NULL, 'x'), "
+                    + "PASSWORD_VERIFY((SELECT C FROM P WHERE ID = 1), NULL)")) {
+                rs.next();
+                assertNull(rs.getObject(1));
+                assertNull(rs.getObject(2));
+            }
+            stat.executeUpdate("UPDATE P SET C = 'changed' WHERE ID = 1");
+            try (ResultSet rs = stat.executeQuery("SELECT PASSWORD_VERIFY(C, 'changed'), "
+                    + "PASSWORD_VERIFY(C, 'CHANGED') FROM P WHERE ID = 1")) {
+                rs.next();
+                assertTrue(rs.getBoolean(1));
+                assertFalse(rs.getBoolean(2));
+            }
+            stat.executeUpdate("INSERT INTO P VALUES (9, NULL)");
+            try (ResultSet rs = stat.executeQuery("SELECT C FROM P WHERE ID = 9")) {
+                rs.next();
+                assertNull(rs.getObject(1));
+            }
+            assertThrows(SQLException.class,
+                    () -> stat.executeQuery("SELECT PASSWORD_VERIFY('not a credential', 'x')"));
+        }
     }
 
     private static void testConnectWithHash() throws SQLException {

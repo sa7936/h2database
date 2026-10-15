@@ -334,6 +334,7 @@ import org.h2.expression.function.MathFunction;
 import org.h2.expression.function.MathFunction1;
 import org.h2.expression.function.MathFunction2;
 import org.h2.expression.function.NullIfFunction;
+import org.h2.expression.function.PasswordVerifyFunction;
 import org.h2.expression.function.RandFunction;
 import org.h2.expression.function.RegexpFunction;
 import org.h2.expression.function.SessionControlFunction;
@@ -4266,6 +4267,8 @@ public final class Parser extends ParserBase {
             return readConcatFunction(ConcatFunction.CONCAT_WS);
         case "HASH":
             return new HashFunction(readExpression(), readNextArgument(), readIfArgument(), HashFunction.HASH);
+        case "PASSWORD_VERIFY":
+            return new PasswordVerifyFunction(readExpression(), readLastArgument());
         case "ORA_HASH": {
             Expression arg1 = readExpression();
             if (readIfMore()) {

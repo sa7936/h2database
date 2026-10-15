@@ -81,11 +81,10 @@ public final class CastSpecification extends Function1_2 {
         if (right != null) {
             right = right.optimize(session);
         }
-        if (left.isConstant() && (right == null || right.isConstant())) {
+        if (left.isConstant() && (right == null || right.isConstant())
+                && (left.isNullConstant() || canOptimizeCast(left.getType().getValueType(), type.getValueType()))) {
             Value v = getValue(session);
-            if (v == ValueNull.INSTANCE || canOptimizeCast(left.getType().getValueType(), type.getValueType())) {
-                return TypedValueExpression.get(v, type);
-            }
+            return TypedValueExpression.get(v, type);
         }
         return this;
     }
@@ -102,6 +101,10 @@ public final class CastSpecification extends Function1_2 {
     }
 
     private static boolean canOptimizeCast(int src, int dst) {
+        if (dst == Value.PASSWORD && src != Value.PASSWORD) {
+            // Creating a credential needs a fresh salt for each evaluation.
+            return false;
+        }
         switch (src) {
         case Value.TIME:
             switch (dst) {
