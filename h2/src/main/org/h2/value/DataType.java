@@ -571,6 +571,8 @@ public class DataType {
                     }
                 }
             }
+            case Value.PASSWORD:
+                return false;
             //$FALL-THROUGH$
             default:
                 return true;
